@@ -106,8 +106,23 @@ namespace nil {
                     return similar_std_array_marshalling<boost::array<T, SizeArray>>();
                 }
 
+                template<typename T>
+                struct is_valid_marshalling_output {
+                    static constexpr bool value = is_marshalling_type<T>::value && !is_compatible<T>::value;
+                };
+                template<typename T>
+                struct is_valid_output {
+                    static constexpr bool value = is_compatible<T>::value &&
+                        !is_marshalling_type<T>::value ;
+                };
+                template<typename T>
+                struct is_not_container_output {
+                    static constexpr bool value =
+                        !nil::marshalling::is_container<typename is_compatible<T>::template type<>>::value;
+                };
+
                 template<typename TMarshallingOutnput,
-                         typename = typename std::enable_if<is_marshalling_type<TMarshallingOutnput>::value>::type>
+                         typename = typename std::enable_if<is_valid_marshalling_output<TMarshallingOutnput>::value>::type>
                 inline operator TMarshallingOutnput() const {
 
                     TMarshallingOutnput result;
@@ -116,18 +131,17 @@ namespace nil {
                     return result;
                 }
 
-                template<typename TOutput, typename = typename std::enable_if<is_compatible<TOutput>::value>::type,
-                         typename = typename std::enable_if<!nil::marshalling::is_container<
-                             typename is_compatible<TOutput>::template type<>>::value>::type>
-                inline operator TOutput() const {
-                    using marshalling_type = typename is_compatible<TOutput>::template type<TEndian>;
+               template<typename TOutput, typename = typename std::enable_if<is_valid_output<TOutput>::value>::type,
+               typename = typename std::enable_if<is_not_container_output<TOutput>::value>::type>
+               inline operator TOutput() const {
+                   using marshalling_type = typename is_compatible<TOutput>::template type<TEndian>;
+                   
+                   marshalling_type m_val;
 
-                    marshalling_type m_val;
+                   *status = m_val.read(iterator, count_elements);
 
-                    *status = m_val.read(iterator, count_elements);
-
-                    return TOutput(m_val.value());
-                }
+                   return TOutput(m_val.value());
+               }
 
                 template<typename OutputRange,
                          typename = typename std::enable_if<
@@ -136,7 +150,7 @@ namespace nil {
                                  typename OutputRange::value_type>::template type<>>::value>::type>
                 inline operator OutputRange() {
                     using T = typename OutputRange::value_type;
-                    using marshalling_type = typename is_compatible<std::vector<T>>::template type<TEndian>;
+                    using marshalling_type = typename is_compatible<std::vector<T>>::template type<TEndian>;            
 
                     marshalling_type m_val;
 
