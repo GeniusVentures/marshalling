@@ -107,22 +107,13 @@ namespace nil {
                 }
 
                 template<typename T>
-                struct is_valid_marshalling_output {
-                    static constexpr bool value = is_marshalling_type<T>::value && !is_compatible<T>::value;
-                };
-                template<typename T>
-                struct is_valid_output {
-                    static constexpr bool value = is_compatible<T>::value &&
-                        !is_marshalling_type<T>::value ;
-                };
-                template<typename T>
                 struct is_not_container_output {
                     static constexpr bool value =
                         !nil::marshalling::is_container<typename is_compatible<T>::template type<>>::value;
                 };
 
                 template<typename TMarshallingOutnput,
-                         typename = typename std::enable_if<is_valid_marshalling_output<TMarshallingOutnput>::value>::type>
+                         typename = typename std::enable_if<is_marshalling_type<TMarshallingOutnput>::value>::type>
                 inline operator TMarshallingOutnput() const {
 
                     TMarshallingOutnput result;
@@ -131,7 +122,7 @@ namespace nil {
                     return result;
                 }
 
-               template<typename TOutput, typename = typename std::enable_if<is_valid_output<TOutput>::value>::type,
+               template<typename TOutput, typename = typename std::enable_if<is_compatible<TOutput>::value>::type,
                typename = typename std::enable_if<is_not_container_output<TOutput>::value>::type>
                inline operator TOutput() const {
                    using marshalling_type = typename is_compatible<TOutput>::template type<TEndian>;
